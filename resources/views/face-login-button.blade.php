@@ -15,7 +15,7 @@
 </div>
 
 @once
-    <script src="{{ asset('vendor/faceauth/resources/face-api.min.js') }}"></script>
+    <script src="{{ asset('vendor/faceauth/face-api.min.js') }}"></script>
 @endonce
 <script>
 const btn = document.getElementById('faceauth-login-btn');
