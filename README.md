@@ -50,7 +50,7 @@ php artisan migrate
 
 ### 4. Configure o caminho das imagens e prefixo das rotas
 
-No seu `.env`:
+O caminho definido em `FACEAUTH_USERS_IMAGE_PATH` deve ser o diretório onde ficarão as pastas dos usuários com as fotos cadastradas. Exemplo:
 
 ```env
 FACEAUTH_USERS_IMAGE_PATH=storage/app/private
@@ -58,6 +58,10 @@ FACEAUTH_ROUTE_PREFIX=faceauth # (opcional, para customizar o prefixo das rotas)
 ```
 
 Se necessário, ajuste também em `config/faceauth.php`.
+
+> **Importante:**
+> - O diretório definido em `FACEAUTH_USERS_IMAGE_PATH` será usado para armazenar as fotos dos usuários, cada usuário terá uma pasta com suas imagens.
+> - Garanta que esse diretório seja gravável pelo PHP e não esteja acessível diretamente pelo navegador.
 
 ### 5. Permissões de pasta
 
