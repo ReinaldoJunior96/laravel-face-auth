@@ -19,6 +19,8 @@ class FaceAuthServiceProvider extends ServiceProvider
       }
       // Registra namespace para as views
       $this->loadViewsFrom(__DIR__ . '/../resources/views', 'faceauth');
+      // Registra as rotas do package
+      $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
    }
 
    public function register()

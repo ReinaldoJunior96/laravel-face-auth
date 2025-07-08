@@ -16,7 +16,6 @@
 
 <script src="/vendor/faceauth/face-api.min.js"></script>
 <script>
-// Exemplo básico de integração JS
 const btn = document.getElementById('faceauth-login-btn');
 const modal = document.getElementById('faceauth-modal');
 const video = document.getElementById('faceauth-video');
@@ -24,12 +23,46 @@ const captureBtn = document.getElementById('faceauth-capture-btn');
 const cancelBtn = document.getElementById('faceauth-cancel-btn');
 const statusDiv = document.getElementById('faceauth-status');
 
-btn.onclick = () => {
+let labeledFaceDescriptors = [];
+let faceMatcher = null;
+
+async function fetchFaceImages() {
+    const res = await fetch('/faceauth/faces');
+    return await res.json(); // [{user_id, image_url}]
+}
+
+async function loadLabeledImages() {
+    const faces = await fetchFaceImages();
+    const labels = {};
+    for (const face of faces) {
+        if (!labels[face.user_id]) labels[face.user_id] = [];
+        labels[face.user_id].push(face.image_url);
+    }
+    return Promise.all(Object.entries(labels).map(async ([user_id, urls]) => {
+        const descriptors = [];
+        for (const url of urls) {
+            const img = await faceapi.fetchImage(url);
+            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+            if (detection) descriptors.push(detection.descriptor);
+        }
+        return new faceapi.LabeledFaceDescriptors(user_id, descriptors);
+    }));
+}
+
+btn.onclick = async () => {
     modal.style.display = 'flex';
-    statusDiv.innerText = '';
+    statusDiv.innerText = 'Carregando modelos...';
     navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => { video.srcObject = stream; })
         .catch(() => { statusDiv.innerText = 'Não foi possível acessar a câmera.'; });
+    // Carrega modelos do face-api.js
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/vendor/faceauth/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/vendor/faceauth/models');
+    await faceapi.nets.faceRecognitionNet.loadFromUri('/vendor/faceauth/models');
+    statusDiv.innerText = 'Carregando fotos dos usuários...';
+    labeledFaceDescriptors = await loadLabeledImages();
+    faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
+    statusDiv.innerText = '';
 };
 
 cancelBtn.onclick = () => {
@@ -39,14 +72,21 @@ cancelBtn.onclick = () => {
 
 captureBtn.onclick = async () => {
     statusDiv.innerText = 'Validando...';
-    // Aqui você pode capturar a imagem e enviar para o backend
-    // Exemplo: capturar frame
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    const imageData = canvas.toDataURL('image/png');
-    // TODO: Enviar imageData para rota de validação facial
-    statusDiv.innerText = 'Reconhecimento facial não implementado (exemplo de UI).';
+    const detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+    if (!detection) {
+        statusDiv.innerText = 'Nenhum rosto detectado.';
+        return;
+    }
+    const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+    if (bestMatch.label === 'unknown') {
+        statusDiv.innerText = 'Usuário não reconhecido.';
+    } else {
+        statusDiv.innerText = `Usuário identificado: ${bestMatch.label}`;
+        // Aqui você pode disparar o login automático ou enviar para o backend
+    }
 };
 </script>
