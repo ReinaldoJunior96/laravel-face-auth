@@ -80,19 +80,24 @@ captureBtn.onclick = async () => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
+    console.log('[DEBUG] Canvas criado e vídeo desenhado');
     const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
     overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+    console.log('[DEBUG] Detection:', detection);
 
     if (!detection) {
         statusDiv.innerText = 'Nenhum rosto detectado.';
+        console.warn('[DEBUG] Nenhum rosto detectado');
         return;
     }
     const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+    console.log('[DEBUG] Best match:', bestMatch);
 
     // Desenha a caixa e a legenda
     const dims = faceapi.matchDimensions(overlay, canvas, true);
     const resizedDet = faceapi.resizeResults(detection, dims);
     faceapi.draw.drawDetections(overlay, resizedDet);
+    console.log('[DEBUG] Detections desenhadas');
 
     if (bestMatch.label !== 'unknown') {
         const box = resizedDet.detection.box;
@@ -100,6 +105,7 @@ captureBtn.onclick = async () => {
         ctx.font = '16px Arial';
         ctx.fillStyle = '#00FF00';
         ctx.fillText(bestMatch.label, box.x, box.y - 10);
+        console.log('[DEBUG] Legenda desenhada:', bestMatch.label);
     }
 
     if (bestMatch.label === 'unknown') {
