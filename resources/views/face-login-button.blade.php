@@ -44,7 +44,7 @@ async function loadLabeledImages() {
         const descriptors = [];
         for (const url of urls) {
             const img = await faceapi.fetchImage(url);
-            const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+            const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
             if (detection) descriptors.push(detection.descriptor);
         }
         return new faceapi.LabeledFaceDescriptors(name, descriptors);
@@ -78,7 +78,7 @@ captureBtn.onclick = async () => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    const detection = await faceapi.detectSingleFace(canvas).withFaceLandmarks().withFaceDescriptor();
+    const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
     if (!detection) {
         statusDiv.innerText = 'Nenhum rosto detectado.';
         return;
