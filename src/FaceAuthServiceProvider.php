@@ -31,13 +31,8 @@ class FaceAuthServiceProvider extends ServiceProvider
       }
       // Registra namespace para as views
       $this->loadViewsFrom(__DIR__ . '/../resources/views', 'faceauth');
-      // Registra as rotas do package com prefixo customizável
-      $prefix = config('faceauth.route_prefix', 'faceauth');
-      $this->loadRoutesFrom(function () use ($prefix) {
-         \Illuminate\Support\Facades\Route::prefix($prefix)
-            ->middleware(['web', 'throttle:10,1'])
-            ->group(__DIR__ . '/../routes/web.php');
-      });
+      // Registra as rotas do package (prefixo e middleware já são tratados no arquivo de rotas)
+      $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
    }
 
    public function register()
