@@ -20,11 +20,27 @@ Reconhecimento facial plug-and-play para autenticação automática de usuários
 composer require faceauth/laravel-face-auth
 ```
 
-### 2. Publique os assets, migrations, views e config
+### 2. Publique os assets, migrations, views, models e config
+
+O comando abaixo publica tudo de uma vez (recomendado):
 
 ```bash
 php artisan vendor:publish --provider="FaceAuth\\FaceAuthServiceProvider"
 ```
+
+Se quiser publicar apenas partes específicas:
+- Apenas assets e modelos:
+  ```bash
+  php artisan vendor:publish --tag=faceauth-assets --force
+  ```
+- Apenas migrations:
+  ```bash
+  php artisan vendor:publish --tag=faceauth-migrations
+  ```
+- Apenas config:
+  ```bash
+  php artisan vendor:publish --tag=faceauth-config
+  ```
 
 ### 3. Execute as migrations
 
@@ -72,6 +88,66 @@ No seu formulário de cadastro:
 ```
 
 No controller, aceite de 1 a 5 imagens (veja exemplo no código do package). Cada imagem será salva com nome aleatório/hash.
+
+---
+
+## Como cadastrar usuários com fotos para reconhecimento facial
+
+Para que o login facial funcione, é obrigatório que cada usuário tenha pelo menos 1 foto cadastrada (máximo 5). O upload dessas imagens deve ser feito no momento do cadastro do usuário no seu sistema.
+
+### Exemplo de formulário de cadastro
+
+```blade
+<form method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
+    @csrf
+    <input type="text" name="name" required placeholder="Nome">
+    <input type="email" name="email" required placeholder="Email">
+    <input type="password" name="password" required placeholder="Senha">
+    <input type="file" name="face_image[]" accept="image/*" multiple required>
+    <button type="submit">Cadastrar</button>
+</form>
+```
+
+### Exemplo de código backend (Controller)
+
+```php
+public function register(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users',
+        'password' => 'required|string|min:3',
+        'face_image' => 'required|array|min:1|max:5',
+        'face_image.*' => 'image|max:2048',
+    ]);
+
+    DB::transaction(function () use ($request) {
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+        ]);
+
+        foreach ($request->file('face_image') as $file) {
+            $hashName = md5(uniqid() . microtime(true)) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs("users/{$user->id}", $hashName, 'local');
+            DB::table('faceauth_faces')->insert([
+                'user_id' => $user->id,
+                'face_image' => $path,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    });
+
+    // ... restante do fluxo
+}
+```
+
+> **Importante:**
+> - O cadastro de fotos é obrigatório para o reconhecimento facial funcionar.
+> - Adapte o exemplo acima conforme a estrutura da sua tabela de usuários.
+> - O package não altera sua tabela de usuários, apenas utiliza a tabela `faceauth_faces` para armazenar as imagens.
 
 ---
 
