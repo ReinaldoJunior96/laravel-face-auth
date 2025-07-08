@@ -30,24 +30,24 @@ let faceMatcher = null;
 
 async function fetchFaceImages() {
     const res = await fetch('/faceauth/faces');
-    return await res.json(); // [{user_id, image_url}]
+    return await res.json(); // [{user_id, name, url}]
 }
 
 async function loadLabeledImages() {
     const faces = await fetchFaceImages();
     const labels = {};
     for (const face of faces) {
-        if (!labels[face.user_id]) labels[face.user_id] = [];
-        labels[face.user_id].push(face.image_url);
+        if (!labels[face.name]) labels[face.name] = [];
+        labels[face.name].push(face.url);
     }
-    return Promise.all(Object.entries(labels).map(async ([user_id, urls]) => {
+    return Promise.all(Object.entries(labels).map(async ([name, urls]) => {
         const descriptors = [];
         for (const url of urls) {
             const img = await faceapi.fetchImage(url);
             const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
             if (detection) descriptors.push(detection.descriptor);
         }
-        return new faceapi.LabeledFaceDescriptors(user_id, descriptors);
+        return new faceapi.LabeledFaceDescriptors(name, descriptors);
     }));
 }
 
