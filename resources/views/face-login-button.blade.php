@@ -6,7 +6,8 @@
 <div id="faceauth-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;z-index:9999;">
     <div style="background:#fff;padding:24px;border-radius:8px;max-width:400px;width:100%;text-align:center;position:relative;">
         <h3>Reconhecimento Facial</h3>
-        <video id="faceauth-video" width="320" height="240" autoplay style="border-radius:8px;"></video>
+        <video id="faceauth-video" width="320" height="240" autoplay style="border-radius:8px;position:relative;z-index:1;"></video>
+        <canvas id="faceauth-overlay" width="320" height="240" style="position:absolute;top:0;left:0;z-index:2;pointer-events:none;"></canvas>
         <br>
         <button id="faceauth-capture-btn" style="margin-top:12px;">Capturar e Validar</button>
         <button id="faceauth-cancel-btn" style="margin-top:12px;background:#eee;color:#333;">Cancelar</button>
@@ -24,6 +25,7 @@ const video = document.getElementById('faceauth-video');
 const captureBtn = document.getElementById('faceauth-capture-btn');
 const cancelBtn = document.getElementById('faceauth-cancel-btn');
 const statusDiv = document.getElementById('faceauth-status');
+const overlay = document.getElementById('faceauth-overlay');
 
 let labeledFaceDescriptors = [];
 let faceMatcher = null;
@@ -79,11 +81,27 @@ captureBtn.onclick = async () => {
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
     const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+    overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
+
     if (!detection) {
         statusDiv.innerText = 'Nenhum rosto detectado.';
         return;
     }
     const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+
+    // Desenha a caixa e a legenda
+    const dims = faceapi.matchDimensions(overlay, canvas, true);
+    const resizedDet = faceapi.resizeResults(detection, dims);
+    faceapi.draw.drawDetections(overlay, resizedDet);
+
+    if (bestMatch.label !== 'unknown') {
+        const box = resizedDet.detection.box;
+        const ctx = overlay.getContext('2d');
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#00FF00';
+        ctx.fillText(bestMatch.label, box.x, box.y - 10);
+    }
+
     if (bestMatch.label === 'unknown') {
         statusDiv.innerText = 'Usuário não reconhecido.';
     } else {
