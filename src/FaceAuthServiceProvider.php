@@ -35,4 +35,9 @@ class FaceAuthServiceProvider extends ServiceProvider
    {
       // Futuras dependências e bindings
    }
+   // Retorna o path das imagens dos usuários, configurável via .env
+   public static function getUsersImagePath()
+   {
+      return env('FACEAUTH_USERS_IMAGE_PATH', 'storage/app/private');
+   }
 }
