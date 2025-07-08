@@ -14,7 +14,9 @@
     </div>
 </div>
 
-<script src="/vendor/faceauth/face-api.min.js"></script>
+@once
+    <script src="{{ asset('vendor/faceauth/face-api.min.js') }}"></script>
+@endonce
 <script>
 const btn = document.getElementById('faceauth-login-btn');
 const modal = document.getElementById('faceauth-modal');
