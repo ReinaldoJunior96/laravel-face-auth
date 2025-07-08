@@ -29,6 +29,7 @@ const overlay = document.getElementById('faceauth-overlay');
 
 let labeledFaceDescriptors = [];
 let faceMatcher = null;
+let recognizing = false;
 
 async function fetchFaceImages() {
     const res = await fetch('/faceauth/faces');
@@ -67,59 +68,51 @@ btn.onclick = async () => {
     labeledFaceDescriptors = await loadLabeledImages();
     faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
     statusDiv.innerText = '';
+    recognizing = true;
+    recognizeLoop();
 };
 
 cancelBtn.onclick = () => {
     modal.style.display = 'none';
+    recognizing = false;
     if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
 };
 
-captureBtn.onclick = async () => {
-    statusDiv.innerText = 'Validando...';
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    console.log('[DEBUG] Canvas criado e vídeo desenhado');
-    const detection = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
-    overlay.getContext('2d').clearRect(0, 0, overlay.width, overlay.height);
-    console.log('[DEBUG] Detection:', detection);
+async function recognizeLoop() {
+    if (!recognizing) return;
+    if (video.readyState === 4) {
+        const overlayCtx = overlay.getContext('2d');
+        overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+        if (detection) {
+            const dims = faceapi.matchDimensions(overlay, video, true);
+            const resizedDet = faceapi.resizeResults(detection, dims);
+            const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
 
-    if (!detection) {
-        statusDiv.innerText = 'Nenhum rosto detectado.';
-        console.warn('[DEBUG] Nenhum rosto detectado');
-        return;
+            // Desenha caixa, landmarks, score e legenda
+            const ctx = overlay.getContext('2d');
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 2;
+            const box = resizedDet.detection.box;
+            ctx.strokeRect(box.x, box.y, box.width, box.height);
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#00FF00';
+            const score = (resizedDet.detection.score * 100).toFixed(2) + '%';
+            ctx.fillText(`Score: ${score}`, box.x, box.y - 25);
+            faceapi.draw.drawFaceLandmarks(overlay, resizedDet);
+
+            if (bestMatch.label !== 'unknown') {
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#00FF00';
+                ctx.fillText(bestMatch.label, box.x, box.y - 10);
+                statusDiv.innerText = `Usuário identificado: ${bestMatch.label}`;
+            } else {
+                statusDiv.innerText = 'Usuário não reconhecido.';
+            }
+        } else {
+            statusDiv.innerText = 'Nenhum rosto detectado.';
+        }
     }
-    const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-    console.log('[DEBUG] Best match:', bestMatch);
-
-    // Desenha a caixa, landmarks e score
-    const dims = faceapi.matchDimensions(overlay, canvas, true);
-    const resizedDet = faceapi.resizeResults(detection, dims);
-    const ctx = overlay.getContext('2d');
-    ctx.strokeStyle = '#00FF00';
-    ctx.lineWidth = 2;
-    const box = resizedDet.detection.box;
-    ctx.strokeRect(box.x, box.y, box.width, box.height);
-    ctx.font = '14px Arial';
-    ctx.fillStyle = '#00FF00';
-    const score = (resizedDet.detection.score * 100).toFixed(2) + '%';
-    ctx.fillText(`Score: ${score}`, box.x, box.y - 25);
-    faceapi.draw.drawFaceLandmarks(overlay, resizedDet);
-    console.log('[DEBUG] Detections desenhadas');
-
-    if (bestMatch.label !== 'unknown') {
-        ctx.font = '16px Arial';
-        ctx.fillStyle = '#00FF00';
-        ctx.fillText(bestMatch.label, box.x, box.y - 10);
-        console.log('[DEBUG] Legenda desenhada:', bestMatch.label);
-    }
-
-    if (bestMatch.label === 'unknown') {
-        statusDiv.innerText = 'Usuário não reconhecido.';
-    } else {
-        statusDiv.innerText = `Usuário identificado: ${bestMatch.label}`;
-        // Aqui você pode disparar o login automático ou enviar para o backend
-    }
-};
+    setTimeout(recognizeLoop, 500); // repete a cada 500ms
+}
 </script>
