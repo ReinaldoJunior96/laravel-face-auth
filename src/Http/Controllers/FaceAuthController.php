@@ -20,7 +20,7 @@ class FaceAuthController extends Controller
             foreach (glob($userDir . '/*.jpg') as $img) {
                $faces[] = [
                   'user_id' => $userId,
-                  'name' => $this->getUserName($userId), // customize conforme seu projeto
+                  'label' => 'ID-' . $userId, // Não expõe nome real
                   'url' => url('/faceauth/user-image/' . $userId . '/' . basename($img)),
                ];
             }

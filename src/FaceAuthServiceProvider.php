@@ -24,11 +24,20 @@ class FaceAuthServiceProvider extends ServiceProvider
             __DIR__ . '/../resources/js/face-api.min.js' => public_path('vendor/faceauth/face-api.min.js'),
             __DIR__ . '/../resources/models/face-api' => public_path('vendor/faceauth/models'),
          ], 'faceauth-assets');
+         // Publica o config do package
+         $this->publishes([
+            __DIR__ . '/../config/faceauth.php' => config_path('faceauth.php'),
+         ], 'faceauth-config');
       }
       // Registra namespace para as views
       $this->loadViewsFrom(__DIR__ . '/../resources/views', 'faceauth');
-      // Registra as rotas do package
-      $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+      // Registra as rotas do package com prefixo customizável
+      $prefix = config('faceauth.route_prefix', 'faceauth');
+      $this->loadRoutesFrom(function () use ($prefix) {
+         \Illuminate\Support\Facades\Route::prefix($prefix)
+            ->middleware(['web', 'throttle:10,1'])
+            ->group(__DIR__ . '/../routes/web.php');
+      });
    }
 
    public function register()
