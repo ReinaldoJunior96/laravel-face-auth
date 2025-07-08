@@ -42,4 +42,19 @@ class FaceAuthController extends Controller
       // Aqui você pode buscar do banco, ou usar o próprio id como nome
       return 'Usuário ' . $userId;
    }
+
+   public function loginById(\Illuminate\Http\Request $request)
+   {
+      $request->validate([
+         'user_id' => 'required|exists:users,id',
+      ]);
+
+      $userModel = config('auth.providers.users.model', \App\Models\User::class);
+      $user = $userModel::find($request->user_id);
+
+      \Illuminate\Support\Facades\Auth::login($user);
+      $request->session()->regenerate();
+
+      return response()->json(['redirect' => route('dashboard')]);
+   }
 }

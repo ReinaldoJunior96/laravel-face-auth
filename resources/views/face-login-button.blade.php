@@ -106,6 +106,25 @@ async function recognizeLoop() {
                 ctx.fillStyle = '#00FF00';
                 ctx.fillText(bestMatch.label, box.x, box.y - 10);
                 statusDiv.innerText = `Usuário identificado: ${bestMatch.label}`;
+                // Extrai o ID do usuário do label (ex: "Usuário 1" -> 1)
+                const userId = bestMatch.label.match(/\d+/)?.[0];
+                if (userId) {
+                    fetch('/faceauth/login-by-id', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ user_id: userId })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.redirect) {
+                            recognizing = false;
+                            window.location.href = data.redirect;
+                        }
+                    });
+                }
             } else {
                 statusDiv.innerText = 'Usuário não reconhecido.';
             }
