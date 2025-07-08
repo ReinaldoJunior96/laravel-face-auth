@@ -93,15 +93,22 @@ captureBtn.onclick = async () => {
     const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
     console.log('[DEBUG] Best match:', bestMatch);
 
-    // Desenha a caixa e a legenda
+    // Desenha a caixa, landmarks e score
     const dims = faceapi.matchDimensions(overlay, canvas, true);
     const resizedDet = faceapi.resizeResults(detection, dims);
-    faceapi.draw.drawDetections(overlay, resizedDet);
+    const ctx = overlay.getContext('2d');
+    ctx.strokeStyle = '#00FF00';
+    ctx.lineWidth = 2;
+    const box = resizedDet.detection.box;
+    ctx.strokeRect(box.x, box.y, box.width, box.height);
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#00FF00';
+    const score = (resizedDet.detection.score * 100).toFixed(2) + '%';
+    ctx.fillText(`Score: ${score}`, box.x, box.y - 25);
+    faceapi.draw.drawFaceLandmarks(overlay, resizedDet);
     console.log('[DEBUG] Detections desenhadas');
 
     if (bestMatch.label !== 'unknown') {
-        const box = resizedDet.detection.box;
-        const ctx = overlay.getContext('2d');
         ctx.font = '16px Arial';
         ctx.fillStyle = '#00FF00';
         ctx.fillText(bestMatch.label, box.x, box.y - 10);
