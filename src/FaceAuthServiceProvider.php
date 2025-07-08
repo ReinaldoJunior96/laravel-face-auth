@@ -16,6 +16,14 @@ class FaceAuthServiceProvider extends ServiceProvider
          $this->publishes([
             __DIR__ . '/../resources/js/face-api.min.js' => public_path('vendor/faceauth/face-api.min.js'),
          ], 'faceauth-assets');
+         $this->publishes([
+            __DIR__ . '/../resources/models/face-api' => public_path('vendor/faceauth/models'),
+         ], 'faceauth-models');
+         // Publica todos os assets de uma vez
+         $this->publishes([
+            __DIR__ . '/../resources/js/face-api.min.js' => public_path('vendor/faceauth/face-api.min.js'),
+            __DIR__ . '/../resources/models/face-api' => public_path('vendor/faceauth/models'),
+         ], 'faceauth-assets');
       }
       // Registra namespace para as views
       $this->loadViewsFrom(__DIR__ . '/../resources/views', 'faceauth');
