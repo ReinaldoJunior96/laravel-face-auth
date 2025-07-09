@@ -40,17 +40,17 @@ async function loadLabeledImages() {
     const faces = await fetchFaceImages();
     const labels = {};
     for (const face of faces) {
-        if (!labels[face.name]) labels[face.name] = [];
-        labels[face.name].push(face.url);
+        if (!labels[face.label]) labels[face.label] = [];
+        labels[face.label].push(face.url);
     }
-    return Promise.all(Object.entries(labels).map(async ([name, urls]) => {
+    return Promise.all(Object.entries(labels).map(async ([label, urls]) => {
         const descriptors = [];
         for (const url of urls) {
             const img = await faceapi.fetchImage(url);
             const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
             if (detection) descriptors.push(detection.descriptor);
         }
-        return new faceapi.LabeledFaceDescriptors(name, descriptors);
+        return new faceapi.LabeledFaceDescriptors(label, descriptors);
     }));
 }
 
